@@ -1,8 +1,6 @@
 script "pStash";
 notify Coolfood;
 
-import <clan_stash.ash>
-
 string iotmFile = "data/pStash/sharedStashCounts.txt";
 string cheapFile = "data/pStash/nonIotmSharedStashCounts.txt";
 
@@ -17,7 +15,7 @@ haiku katana, Bag o' Tricks, Greatest American Pants, portable Mayo Clinic, Litt
 - chroner cross
 - portable steam unit
 */
-boolean [item] noniotm_items = $items[ chroner chross, chroner trigger, portable steam unit];
+boolean [item] noniotm_items = $items[ chroner cross, chroner trigger, portable steam unit];
 
 
 boolean verifyInit();
