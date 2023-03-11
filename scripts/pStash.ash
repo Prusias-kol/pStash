@@ -9,14 +9,14 @@ string personalFile = "data/pStash/personalStashOverlap.txt";
 - portable Mayo Clinic
 - Little Geneticist DNA-Splicing Lab
 */
-boolean [item] valuable_items = $items[snow suit, platinum yendorian express card, moveable feast, pantsgiving, operation patriot shield, Buddy Bjorn, Crown of Thrones, Repaid Diaper, spooky putty sheet, origami pasties, navel ring of navel gazing, mayflower bouquet, BittyCar MeatCar, BittyCar SoulCar, defective Game Grid token,
+boolean [item] valuable_items = $items[snow suit, platinum yendorian express card, moveable feast, pantsgiving, operation patriot shield, Buddy Bjorn, Crown of Thrones, Repaid Diaper, spooky putty sheet, origami pasties, navel ring of navel gazing, mayflower bouquet, 
 haiku katana, Bag o' Tricks, Greatest American Pants, portable Mayo Clinic, Little Geneticist DNA-Splicing Lab];
 /* Non iotms shareables tracked
 - chroner trigger
 - chroner cross
 - portable steam unit
 */
-boolean [item] noniotm_items = $items[ chroner cross, chroner trigger, portable steam unit];
+boolean [item] noniotm_items = $items[BittyCar MeatCar, BittyCar SoulCar, defective Game Grid token, chroner cross, chroner trigger, portable steam unit];
 
 
 boolean verifyInit();
