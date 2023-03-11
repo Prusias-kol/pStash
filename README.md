@@ -15,4 +15,4 @@ git checkout https://github.com/Prusias-kol/pStash main
 - Return items you took from the stash
 
 ## TODO
-Script has barebones support for duplicate items in stash if you're part of a wealthy clan. Currently would require the user to go into data/pStash and edit those files manually to account for multiple items when tracking. Returning does not support multiple items.
+Script has barebones support for duplicate items in stash if you're part of a wealthy clan. Currently only tracks multiple items if all of them are in the stash on running init. If they aren't, would require the user to go into data/pStash and edit those files manually to account for multiple items when tracking. Returning does not support multiple items.
