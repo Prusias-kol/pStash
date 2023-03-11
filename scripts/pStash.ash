@@ -35,6 +35,7 @@ void printHelp(){
     goldHTMLprint("<b>Welcome to pStash Stash Manager</b>");
     print_html("<b>init</b> - Initializes pStash. Must be run before any other functions will work. Be in the desired clan before running pStash.");
     print("Make sure you return all stash items before running init.", "red");
+    print_html("<b>reset</b> - Resets pStash so you can run init again.");
     print_html("<b>list</b> - Lists tracked stash items and their amounts.");
     print_html("<b>verify</b> - If a stash item is missing, checks who last took it out.");
     print_html("<b>return</b> - Return stash items that you took out. Will not return your personal items");
