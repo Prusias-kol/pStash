@@ -43,6 +43,7 @@ void printHelp(){
 
 void main(string option) {
     checkForUpdate();
+    cli_execute("refresh stash");
     string [int] commands = option.split_string("\\s+");
     for(int i = 0; i < commands.count(); ++i){
         switch(commands[i]){
@@ -81,9 +82,9 @@ void main(string option) {
 //assumes you nver take out items u personally own
 void helperReturnItem(int[item] map, item it) {
     if (map contains it) {
-        print("Skipping " + it + " because it's tracked as a personal item");
+        print("Skipping " + it + " because it's tracked as a personal item", "red");
     } else {
-        print("Returning " + it);
+        print("Returning " + it, "green");
         cli_execute("stash put " + it);
     }
 }
@@ -108,6 +109,7 @@ void returnToStash() {
         if (totalItemAmount(key) > 0)
             helperReturnItem(personalItemListFromFile, key);
     }
+    goldHTMLprint("<b>Everything Returned</b>");
 }
 
 boolean verifyInit() {
@@ -180,17 +182,27 @@ void listIterateMap(string msg1, string msg2, int [item] map) {
 		if (map[key] > 0) {
             if (stash_amount(key) > map[key])
                 print("- " + key + " has " + stash_amount(key) + "/" + map[key] + ". More exist in stash than logged!", "red");
+            else if (stash_amount(key) == 0 && map[key] == 0)
+                print("- " + key + " does not exist in stash.");
+            else if (stash_amount(key) == 0 && map[key] != 0)
+                print("- " + key + " has " + stash_amount(key) + "/" + map[key], "red");
+            else if (stash_amount(key) == map[key])
+                print("- " + key + " has " + stash_amount(key) + "/" + map[key]);
             else
-			    print("- " + key + " has " + stash_amount(key) + "/" + map[key]);
+			    print("- " + key + " has " + stash_amount(key) + "/" + map[key], "orange");
 		} 
 	}
     print(msg2, "red");
     foreach key in map {
 		if (map[key] == 0) {
-            if (stash_amount(key) > 0)
-                print("- " + key + " has " + stash_amount(key) + " in stash. More exist in stash than logged!", "green");
+            if (stash_amount(key) > map[key])
+                print("- " + key + " has " + stash_amount(key) + "/" + map[key] + ". More exist in stash than logged!", "red");
+            else if (stash_amount(key) == 0 && map[key] == 0)
+                print("- " + key + " does not exist in stash.");
+            else if (stash_amount(key) == 0 && map[key] != 0)
+                print("- " + key + " has " + stash_amount(key) + "/" + map[key], "red");
             else
-			    print("- " + key + " does not exist in stash.");
+			    print("- " + key + " has " + stash_amount(key) + "/" + map[key]);
 		} 
 	}
 }
