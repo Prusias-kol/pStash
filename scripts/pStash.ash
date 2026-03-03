@@ -5,6 +5,8 @@ string iotmFile = "data/pStash/sharedStashCounts.txt";
 string cheapFile = "data/pStash/nonIotmSharedStashCounts.txt";
 string personalFile = "data/pStash/personalStashOverlap.txt";
 string stashLogCsvFile = "data/pStash/stashActivityLog.csv.txt";
+string stashLogCheckpointFile = "data/pStash/stashActivityCheckpoint.txt";
+int stashLogCheckpointDepth = 12;
 
 /* NonGarbo things added
 - portable Mayo Clinic
@@ -286,19 +288,19 @@ string csvEscape(string value) {
 void exportStashActivityLogCsv() {
     string log = visit_url("clan_log.php");
     string [int] existingRows = file_to_array(stashLogCsvFile);
-    boolean [string] seenRows;
+    string [int] checkpointRows = file_to_array(stashLogCheckpointFile);
     string header = "timestamp,player,player_id,action,quantity,item,raw_entry";
     buffer out;
     int keptRows = 0;
     int newRows = 0;
+    string [int] currentCsvRows;
+    string [int] currentRawRows;
 
     out.append(header + "\n");
     foreach i, row in existingRows {
-        if (row == "" || row == header)
+        if (row == "" || row == header) {
             continue;
-        if (seenRows contains row)
-            continue;
-        seenRows[row] = true;
+        }
         out.append(row + "\n");
         keptRows = keptRows + 1;
     }
@@ -329,14 +331,81 @@ void exportStashActivityLogCsv() {
         }
 
         string csvRow = csvEscape(timestamp) + "," + csvEscape(playerName) + "," + csvEscape(playerId) + "," + csvEscape(action) + "," + csvEscape(quantity) + "," + csvEscape(itemName) + "," + csvEscape(rawEntry);
-        if (seenRows contains csvRow)
-            continue;
-        seenRows[csvRow] = true;
-        out.append(csvRow + "\n");
-        newRows = newRows + 1;
+        currentCsvRows[currentCsvRows.count()] = csvRow;
+        currentRawRows[currentRawRows.count()] = rawEntry;
+    }
+
+    boolean usedFallbackDedupe = false;
+    if (checkpointRows.count() > 0 && currentRawRows.count() >= checkpointRows.count()) {
+        int checkpointStart = -1;
+        int maxStart = currentRawRows.count() - checkpointRows.count();
+        for i from 0 to maxStart {
+            boolean allMatch = true;
+            for j from 0 to checkpointRows.count() - 1 {
+                if (currentRawRows[i + j] != checkpointRows[j]) {
+                    allMatch = false;
+                    break;
+                }
+            }
+            if (allMatch) {
+                // Use the latest match. This best preserves genuine repeated entries.
+                checkpointStart = i;
+            }
+        }
+
+        if (checkpointStart >= 0) {
+            if (checkpointStart > 0) {
+                for i from 0 to checkpointStart - 1 {
+                    out.append(currentCsvRows[i] + "\n");
+                    newRows = newRows + 1;
+                }
+            }
+        } else {
+            usedFallbackDedupe = true;
+        }
+    } else if (checkpointRows.count() == 0) {
+        if (keptRows > 0) {
+            usedFallbackDedupe = true;
+        } else if (currentCsvRows.count() > 0) {
+            for i from 0 to currentCsvRows.count() - 1 {
+                out.append(currentCsvRows[i] + "\n");
+                newRows = newRows + 1;
+            }
+        }
+    } else {
+        usedFallbackDedupe = true;
+    }
+
+    if (usedFallbackDedupe) {
+        print("Stash log checkpoint not found in current clan log. Falling back to exact-row dedupe for this run.", "red");
+        boolean [string] seenRows;
+        foreach i, row in existingRows {
+            if (row == "" || row == header) {
+                continue;
+            }
+            seenRows[row] = true;
+        }
+        foreach i, row in currentCsvRows {
+            if (seenRows contains row) {
+                continue;
+            }
+            seenRows[row] = true;
+            out.append(row + "\n");
+            newRows = newRows + 1;
+        }
     }
 
     if (buffer_to_file(out, stashLogCsvFile)) {
+        buffer checkpointOut;
+        int checkpointCount = min(stashLogCheckpointDepth, currentRawRows.count());
+        if (checkpointCount > 0) {
+            for i from 0 to checkpointCount - 1 {
+                checkpointOut.append(currentRawRows[i] + "\n");
+            }
+        }
+        if (!buffer_to_file(checkpointOut, stashLogCheckpointFile)) {
+            print("Warning: failed to update stash log checkpoint file " + stashLogCheckpointFile + ".", "red");
+        }
         goldHTMLprint("<b>Stash activity CSV saved to " + stashLogCsvFile + "</b>");
         print("Kept " + keptRows + " existing rows and added " + newRows + " new rows.");
     } else {
