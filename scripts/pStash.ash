@@ -4,6 +4,7 @@ notify Coolfood;
 string iotmFile = "data/pStash/sharedStashCounts.txt";
 string cheapFile = "data/pStash/nonIotmSharedStashCounts.txt";
 string personalFile = "data/pStash/personalStashOverlap.txt";
+string stashLogCsvFile = "data/pStash/stashActivityLog.csv.txt";
 
 /* NonGarbo things added
 - portable Mayo Clinic
@@ -30,6 +31,8 @@ void verifyStash();
 void who_took(item it);
 int totalItemAmount(item x);
 void returnToStash();
+void exportStashActivityLogCsv();
+string csvEscape(string value);
 
 void printHelp(){
     goldHTMLprint("<b>Welcome to pStash Stash Manager</b>");
@@ -39,6 +42,7 @@ void printHelp(){
     print_html("<b>list</b> - Lists tracked stash items and their amounts.");
     print_html("<b>verify</b> - If a stash item is missing, checks who last took it out.");
     print_html("<b>return</b> - Return stash items that you took out. Will not return your personal items");
+    print_html("<b>logcsv</b> - Export stash activity from clan log into data/pStash/stashActivityLog.csv.txt with exact-string de-duplication.");
 }
 
 void main(string option) {
@@ -68,6 +72,10 @@ void main(string option) {
                 return;
             case "return":
                 returnToStash();
+                return;
+            case "log":
+            case "logcsv":
+                exportStashActivityLogCsv();
                 return;
             case "help":
                 printHelp();
@@ -269,6 +277,71 @@ boolean in_stash(item it) {
 	} else {
 		return false;
 	}
+}
+
+string csvEscape(string value) {
+    return "\"" + value.replace_string("\"", "\"\"") + "\"";
+}
+
+void exportStashActivityLogCsv() {
+    string log = visit_url("clan_log.php");
+    string [int] existingRows = file_to_array(stashLogCsvFile);
+    boolean [string] seenRows;
+    string header = "timestamp,player,player_id,action,quantity,item,raw_entry";
+    buffer out;
+    int keptRows = 0;
+    int newRows = 0;
+
+    out.append(header + "\n");
+    foreach i, row in existingRows {
+        if (row == "" || row == header)
+            continue;
+        if (seenRows contains row)
+            continue;
+        seenRows[row] = true;
+        out.append(row + "\n");
+        keptRows = keptRows + 1;
+    }
+
+    matcher activityMatcher = create_matcher("(\\d\\d/\\d\\d/\\d\\d, \\d\\d:\\d\\d(?:AM|PM)): <a [^>]+>([^<]+)</a> ((?:took|added) [\\d,]+ .*?)\\.<br>", log);
+    while (activityMatcher.find()) {
+        string timestamp = activityMatcher.group(1);
+        string playerText = activityMatcher.group(2);
+        string actionText = activityMatcher.group(3);
+        string rawEntry = timestamp + ": " + playerText + " " + actionText + ".";
+
+        string playerName = playerText;
+        string playerId = "";
+        matcher playerMatcher = create_matcher("^(.*) \\(#(\\d+)\\)$", playerText);
+        if (playerMatcher.find()) {
+            playerName = playerMatcher.group(1);
+            playerId = playerMatcher.group(2);
+        }
+
+        string action = "";
+        string quantity = "";
+        string itemName = actionText;
+        matcher actionMatcher = create_matcher("^(took|added) ([\\d,]+) (.*)$", actionText);
+        if (actionMatcher.find()) {
+            action = actionMatcher.group(1);
+            quantity = actionMatcher.group(2);
+            itemName = actionMatcher.group(3);
+        }
+
+        string csvRow = csvEscape(timestamp) + "," + csvEscape(playerName) + "," + csvEscape(playerId) + "," + csvEscape(action) + "," + csvEscape(quantity) + "," + csvEscape(itemName) + "," + csvEscape(rawEntry);
+        if (seenRows contains csvRow)
+            continue;
+        seenRows[csvRow] = true;
+        out.append(csvRow + "\n");
+        newRows = newRows + 1;
+    }
+
+    if (buffer_to_file(out, stashLogCsvFile)) {
+        goldHTMLprint("<b>Stash activity CSV saved to " + stashLogCsvFile + "</b>");
+        print("Kept " + keptRows + " existing rows and added " + newRows + " new rows.");
+    } else {
+        print("Error: failed to save stash activity CSV log to " + stashLogCsvFile + ".", "red");
+    }
 }
 
 void goldHTMLprint(string text) {
